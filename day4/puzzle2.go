@@ -9,14 +9,34 @@ import (
 	"strings"
 )
 
+func tmain() {
+	if isValidYear("", 2000, 2030) {
+		panic("")
+	}
+	if isValidYear("abc", 2000, 2030) {
+		panic("")
+	}
+	if isValidYear("1999", 2000, 2030) {
+		panic("")
+	}
+	if !isValidYear("2000", 2000, 2030) {
+		panic("")
+	}
+	if !isValidYear("2030", 2000, 2030) {
+		panic("")
+	}
+}
+
 // go run puzzle1.go < input.txt
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	passport := make(map[string]string)
+	total := 0
 	valid := 0
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {
+			total++
 			if isValid(passport) {
 				valid++
 			}
@@ -25,75 +45,77 @@ func main() {
 			fields := strings.Split(line, " ")
 			for _, field := range fields {
 				kv := strings.Split(field, ":")
+				_, present := passport[kv[0]]
+				if present {
+					panic("value already present!")
+				}
 				passport[kv[0]] = kv[1]
 			}
 		}
 	}
 	if len(passport) > 0 {
+		total++
 		if isValid(passport) {
 			valid++
 		}
 	}
-	fmt.Printf("Valid passports: %d\n", valid)
+	fmt.Printf("Passports: %d, Valid: %d\n", total, valid)
 }
 
 func isValid(p map[string]string) bool {
-	// fmt.Printf("%v\n", p)
+	// todo testing validations
+	fmt.Printf("byr: %s, iyr: %s, eyr: %s, hgt: %s, hcl: %s, ecl: %s, pid: %s\n",
+		p["byr"], p["iyr"], p["eyr"], p["hgt"], p["hcl"], p["ecl"], p["pid"])
 
+	valid := true
+	// fmt.Printf("pid: %s -- %v\n", p["pid"], isValidPassportID(p["pid"]))
+	// return true
 	// byr (Birth Year) - four digits; at least 1920 and at most 2002.
 	if !isValidYear(p["byr"], 1920, 2002) {
-		fmt.Printf("invalid byr: %s\n", p["byr"])
-		return false
+		fmt.Printf("  invalid byr: %s\n", p["byr"])
+		valid = false
 	}
 
 	// iyr (Issue Year) - four digits; at least 2010 and at most 2020.
 	if !isValidYear(p["iyr"], 2010, 2020) {
-		fmt.Printf("invalid iyr: %s\n", p["iyr"])
-		return false
+		fmt.Printf("  invalid iyr: %s\n", p["iyr"])
+		valid = false
 	}
 
 	// eyr (Expiration Year) - four digits; at least 2020 and at most 2030.
 	if !isValidYear(p["eyr"], 2020, 2030) {
-		fmt.Printf("invalid eyr: %s\n", p["eyr"])
-		return false
+		fmt.Printf("  invalid eyr: %s\n", p["eyr"])
+		valid = false
 	}
 
 	// hgt (Height) - a number followed by either cm or in:
 	// If cm, the number must be at least 150 and at most 193.
 	// If in, the number must be at least 59 and at most 76.
 	if !isValidHeight(p["hgt"]) {
-		fmt.Printf("invalid hgt: %s\n", p["hgt"])
-		return false
+		fmt.Printf("  invalid hgt: %s\n", p["hgt"])
+		valid = false
 	}
 
 	// hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
 	if !isValidHairColor(p["hcl"]) {
-		fmt.Printf("invalid hcl: %s\n", p["hcl"])
-		return false
+		fmt.Printf("  invalid hcl: %s\n", p["hcl"])
+		valid = false
 	}
 
 	// ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
-	eclMatch, err := regexp.MatchString(`amb|blu|brn|gry|grn|hzl|oth`, p["ecl"])
-	if err != nil {
-		panic(err)
-	}
-	if !eclMatch {
-		fmt.Printf("invalid ecl: %s\n", p["ecl"])
-		return false
+	if !isValidEyeColor(p["ecl"]) {
+		fmt.Printf("  invalid ecl: %s\n", p["ecl"])
+		valid = false
 	}
 
 	// pid (Passport ID) - a nine-digit number, including leading zeroes.
-	pidMatch, err := regexp.MatchString(`[0-9]{9}`, p["pid"])
-	if err != nil {
-		panic(err)
-	}
-	if !pidMatch {
-		fmt.Printf("invalid pid: %s\n", p["pid"])
-		return false
+	if !isValidPassportID(p["pid"]) {
+		fmt.Printf("  invalid pid: %s\n", p["pid"])
+		valid = false
 	}
 
 	// cid (Country ID) - ignored, missing or not.
-	return true
+	return valid
 }
 
 // Valid year ... 4 digits, between min and max inclusive.
@@ -141,4 +163,20 @@ func isValidHairColor(hcl string) bool {
 		panic(err)
 	}
 	return matched
+}
+
+func isValidEyeColor(ecl string) bool {
+	eclMatch, err := regexp.MatchString(`amb|blu|brn|gry|grn|hzl|oth`, ecl)
+	if err != nil {
+		panic(err)
+	}
+	return eclMatch
+}
+
+func isValidPassportID(id string) bool {
+	pidMatch, err := regexp.MatchString(`[0-9]{9}`, id)
+	if err != nil {
+		panic(err)
+	}
+	return pidMatch
 }

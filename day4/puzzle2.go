@@ -9,24 +9,6 @@ import (
 	"strings"
 )
 
-func tmain() {
-	if isValidYear("", 2000, 2030) {
-		panic("")
-	}
-	if isValidYear("abc", 2000, 2030) {
-		panic("")
-	}
-	if isValidYear("1999", 2000, 2030) {
-		panic("")
-	}
-	if !isValidYear("2000", 2000, 2030) {
-		panic("")
-	}
-	if !isValidYear("2030", 2000, 2030) {
-		panic("")
-	}
-}
-
 // go run puzzle1.go < input.txt
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
@@ -35,6 +17,7 @@ func main() {
 	valid := 0
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		// fmt.Printf(">> %s\n", line)
 		if len(line) == 0 {
 			total++
 			if isValid(passport) {
@@ -63,7 +46,6 @@ func main() {
 }
 
 func isValid(p map[string]string) bool {
-	// todo testing validations
 	fmt.Printf("byr: %s, iyr: %s, eyr: %s, hgt: %s, hcl: %s, ecl: %s, pid: %s\n",
 		p["byr"], p["iyr"], p["eyr"], p["hgt"], p["hcl"], p["ecl"], p["pid"])
 
@@ -158,7 +140,7 @@ func isValidHairColor(hcl string) bool {
 	if len(hcl) != 7 {
 		return false
 	}
-	matched, err := regexp.MatchString(`#[0-9a-f]{6}`, hcl)
+	matched, err := regexp.MatchString(`^#[0-9a-f]{6}$`, hcl)
 	if err != nil {
 		panic(err)
 	}
@@ -166,7 +148,7 @@ func isValidHairColor(hcl string) bool {
 }
 
 func isValidEyeColor(ecl string) bool {
-	eclMatch, err := regexp.MatchString(`amb|blu|brn|gry|grn|hzl|oth`, ecl)
+	eclMatch, err := regexp.MatchString(`^(amb|blu|brn|gry|grn|hzl|oth)$`, ecl)
 	if err != nil {
 		panic(err)
 	}
@@ -174,7 +156,7 @@ func isValidEyeColor(ecl string) bool {
 }
 
 func isValidPassportID(id string) bool {
-	pidMatch, err := regexp.MatchString(`[0-9]{9}`, id)
+	pidMatch, err := regexp.MatchString(`^[0-9]{9}$`, id)
 	if err != nil {
 		panic(err)
 	}

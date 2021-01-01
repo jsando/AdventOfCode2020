@@ -131,6 +131,7 @@ type solver struct {
 	unused []*tile
 	placed []*tile
 	image  [][]*tile
+	merged [][]byte
 }
 
 func newSolver(tiles []*tile) *solver {
@@ -164,16 +165,16 @@ func (s *solver) solve() [][]*tile {
 	current := s.tiles[0]
 	for current != nil {
 		if current.top == nil {
-			s.uberMatch(current, "top")
+			s.linkTile(current, "top")
 		}
 		if current.right == nil {
-			s.uberMatch(current, "right")
+			s.linkTile(current, "right")
 		}
 		if current.bottom == nil {
-			s.uberMatch(current, "bottom")
+			s.linkTile(current, "bottom")
 		}
 		if current.left == nil {
-			s.uberMatch(current, "left")
+			s.linkTile(current, "left")
 		}
 		delete(s.toLink, current.id)
 		current = nil
@@ -204,7 +205,7 @@ func convertToArray(rando *tile) [][]*tile {
 	return image
 }
 
-func (s *solver) uberMatch(current *tile, side string) {
+func (s *solver) linkTile(current *tile, side string) {
 	var compare compareFunc
 	switch side {
 	case "top":
@@ -217,7 +218,7 @@ func (s *solver) uberMatch(current *tile, side string) {
 		compare = compareLeftToRight
 	}
 	var matchPiece *tile
-	match := matchSide(s.unused, current, compare)
+	match := findMatchingUnused(s.unused, current, compare)
 	if match != -1 {
 		matchPiece = s.unused[match]
 		s.placed = append(s.placed, matchPiece)
@@ -225,7 +226,7 @@ func (s *solver) uberMatch(current *tile, side string) {
 		s.toLink[matchPiece.id] = matchPiece
 	} else {
 		// search the already placed pile, without rotating/flipping anything
-		matchPiece = matchPlaced(s.placed, current, compare)
+		matchPiece = findMatchingPlaced(s.placed, current, compare)
 	}
 	switch side {
 	case "top":
@@ -239,23 +240,23 @@ func (s *solver) uberMatch(current *tile, side string) {
 	}
 }
 
-func matchSide(tiles []*tile, tile *tile, compare compareFunc) int {
-	for i, candidate := range tiles {
-		if candidate.id == tile.id {
+func findMatchingUnused(unused []*tile, toMatch *tile, compare compareFunc) int {
+	for i, candidate := range unused {
+		if candidate.id == toMatch.id {
 			continue
 		}
 		for rotation := 0; rotation < 4; rotation++ {
 			candidate.rotate()
-			if compare(tile, candidate) {
+			if compare(toMatch, candidate) {
 				return i
 			}
 			candidate.hFlip()
-			if compare(tile, candidate) {
+			if compare(toMatch, candidate) {
 				return i
 			}
 			candidate.hFlip()
 			candidate.vFlip()
-			if compare(tile, candidate) {
+			if compare(toMatch, candidate) {
 				return i
 			}
 			candidate.vFlip()
@@ -264,7 +265,7 @@ func matchSide(tiles []*tile, tile *tile, compare compareFunc) int {
 	return -1
 }
 
-func matchPlaced(placed []*tile, tile *tile, compare compareFunc) *tile {
+func findMatchingPlaced(placed []*tile, tile *tile, compare compareFunc) *tile {
 	for _, candidate := range placed {
 		if candidate.id == tile.id {
 			continue

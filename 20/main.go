@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -18,9 +19,11 @@ func main() {
 
 	s := newSolver(tiles)
 	image := s.solve()
-	//s.print()
-	part1 := image[0][0].id * image[0][11].id * image[11][0].id * image[11][11].id
-	fmt.Printf("Part 1: %d\n", part1) // 29584525501199
+	s.print()
+	size := len(image[0])
+	part1 := image[0][0].id * image[0][size-1].id * image[size-1][0].id * image[size-1][size-1].id
+	fmt.Printf("Part 1: %d\n", part1)           // 29584525501199
+	fmt.Printf("Part 2: %d\n", part2(s.merged)) // 1665
 }
 
 type tile struct {
@@ -131,7 +134,7 @@ type solver struct {
 	unused []*tile
 	placed []*tile
 	image  [][]*tile
-	merged [][]byte
+	merged [][]rune
 }
 
 func newSolver(tiles []*tile) *solver {
@@ -156,6 +159,14 @@ func (s *solver) print() {
 				fmt.Printf("%010b  ", tile.pixels[i])
 			}
 			fmt.Println()
+		}
+		fmt.Println()
+	}
+
+	fmt.Printf("\nMerged Image:\n")
+	for _, row := range s.merged {
+		for _, c := range row {
+			fmt.Printf("%c", c)
 		}
 		fmt.Println()
 	}
@@ -184,7 +195,38 @@ func (s *solver) solve() [][]*tile {
 		}
 	}
 	s.image = convertToArray(s.tiles[0])
+	s.merged = createMerged(s.image)
 	return s.image
+}
+
+// for part2, merge the common sides.  result is in row order.
+func createMerged(image [][]*tile) [][]rune {
+	var merged [][]rune
+	y := -1
+	for _, tileRow := range image {
+		for i := 0; i < len(tileRow[0].pixels); i++ {
+			y++
+			if y%10 == 0 || (y+1)%10 == 0 {
+				continue
+			}
+			var pixelRow []rune
+			for _, t := range tileRow {
+				v := t.pixels[i]
+				mask := 0b_01_0000_0000
+				bitCount := 8
+				for b := 0; b < bitCount; b++ {
+					target := '.'
+					if v&mask != 0 {
+						target = '#'
+					}
+					pixelRow = append(pixelRow, target)
+					mask >>= 1
+				}
+			}
+			merged = append(merged, pixelRow)
+		}
+	}
+	return merged
 }
 
 func convertToArray(rando *tile) [][]*tile {
@@ -315,4 +357,127 @@ func compareRightToLeft(tile1 *tile, tile2 *tile) bool {
 		}
 	}
 	return true
+}
+
+//                  #
+//#    ##    ##    ###
+// #  #  #  #  #  #
+//
+var smPoints = []image.Point{
+	{18, 0},
+	{0, 1},
+	{5, 1},
+	{6, 1},
+	{11, 1},
+	{12, 1},
+	{17, 1},
+	{18, 1},
+	{19, 1},
+	{1, 2},
+	{4, 2},
+	{7, 2},
+	{10, 2},
+	{13, 2},
+	{16, 2},
+}
+
+const smWidth = 20
+const smHeight = 3
+
+func part2(image [][]rune) int {
+	var count int
+	for rotation := 0; rotation < 4; rotation++ {
+		image = rotateImage(image)
+		count = identifyMonsters(image)
+		if count > 0 {
+			break
+		}
+		image = hFlipImage(image)
+		count = identifyMonsters(image)
+		if count > 0 {
+			break
+		}
+		image = hFlipImage(image)
+		image = vFlipImage(image)
+		count = identifyMonsters(image)
+		if count > 0 {
+			break
+		}
+		image = vFlipImage(image)
+	}
+	fmt.Printf("\nFound %d monsters.\n\n", count)
+	printImage(image)
+	// count the number of '#' that remain (the "water roughness")
+	roughness := 0
+	for _, row := range image {
+		for _, c := range row {
+			if c == '#' {
+				roughness++
+			}
+		}
+	}
+	return roughness
+}
+
+func identifyMonsters(image [][]rune) int {
+	smCount := 0
+	for y := 0; y < len(image)-smHeight+1; y++ {
+		for x := 0; x < len(image[0])-smWidth+1; x++ {
+			found := true
+			for _, p := range smPoints {
+				if image[y+p.Y][x+p.X] != '#' {
+					found = false
+					break
+				}
+			}
+			if found {
+				smCount++
+				for _, p := range smPoints {
+					image[y+p.Y][x+p.X] = 'O'
+				}
+			}
+		}
+	}
+	return smCount
+}
+
+func rotateImage(image [][]rune) [][]rune {
+	var rot [][]rune
+	for x := len(image[0]) - 1; x >= 0; x-- {
+		var row []rune
+		for y := 0; y < len(image); y++ {
+			row = append(row, image[y][x])
+		}
+		rot = append(rot, row)
+	}
+	return rot
+}
+
+func vFlipImage(image [][]rune) [][]rune {
+	var flipped [][]rune
+	for i := 0; i < len(image); i++ {
+		flipped = append(flipped, image[len(image)-1-i])
+	}
+	return flipped
+}
+
+func hFlipImage(image [][]rune) [][]rune {
+	var flipped [][]rune
+	for i := 0; i < len(image); i++ {
+		var hflipped []rune
+		for j := len(image[i]) - 1; j >= 0; j-- {
+			hflipped = append(hflipped, image[i][j])
+		}
+		flipped = append(flipped, hflipped)
+	}
+	return flipped
+}
+
+func printImage(image [][]rune) {
+	for _, row := range image {
+		for _, c := range row {
+			fmt.Printf("%c", c)
+		}
+		fmt.Println()
+	}
 }

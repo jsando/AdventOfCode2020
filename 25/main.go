@@ -30,6 +30,8 @@ func main() {
 	fmt.Printf("Key1: %d, Key2: %d\n", createPublicKey(pk1, loop2), createPublicKey(pk2, loop1))
 }
 
+// my first attempt called createPublicKey below repeatedly until it found the right
+// key ... which required loopSize! re-calculations of the same value.  Duh.
 func getLoopSize(subjectNumber, publicKey int) int {
 	value := 1
 	loop := 0

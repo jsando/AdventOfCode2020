@@ -1,4 +1,4 @@
-# Advent of Code 2020 (https://adventofcode.com/2020)
+# Advent of Go 2020
 
 These are my solutions (in Go) to Advent of Code 2020 (https://adventofcode.com/2020), a daily programming challenge.
 
